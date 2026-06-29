@@ -1,0 +1,37 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  id-token: write   # OIDC to AWS (no static keys)
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.21" }
+      - run: cd services/go && go vet ./... && go test ./...
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          cd services/py
+          python -m pip install -e . ruff pytest respx
+          ruff check reimb tests
+          python -m pytest -q
+  eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          cd services/py
+          python -m pip install -e .
+          python -c "from reimb.graph.build import build_graph; from reimb.eval.runner import run_eval, assert_thresholds; m=run_eval(build_graph(),'eval/gold/cases.jsonl'); print(m); assert_thresholds(m)"

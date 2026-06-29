@@ -1,0 +1,15 @@
+# Python
+services/py/.venv/
+**/__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Go
+services/go/bin/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*

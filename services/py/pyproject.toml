@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reimb"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2",
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "rank_bm25>=0.2",
+    "langgraph>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "respx>=0.21"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
+[tool.setuptools.packages.find]
+include = ["reimb*"]

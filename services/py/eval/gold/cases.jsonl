@@ -1,0 +1,4 @@
+{"input": {"case_id": "g1", "claim": {"amount": 50.0, "currency": "USD", "date": "2026-06-20", "category": "meals"}, "rules": {"A_auto": 2000.0, "tau_d": 0.85, "require_receipt_proof": true}, "flags": []}, "gold": "APPROVE"}
+{"input": {"case_id": "g2", "claim": {"amount": 5000.0, "currency": "USD", "date": "2026-06-20", "category": "travel"}, "rules": {"A_auto": 2000.0, "tau_d": 0.85, "require_receipt_proof": true}, "flags": []}, "gold": "ESCALATE"}
+{"input": {"case_id": "g3", "claim": {"amount": 80.0, "currency": "USD", "date": "2026-06-20", "category": "meals"}, "rules": {"A_auto": 2000.0, "tau_d": 0.85, "require_receipt_proof": true}, "flags": ["prohibited_item"]}, "gold": "DENY"}
+{"input": {"case_id": "g4", "claim": {"amount": 120.0, "currency": "USD", "date": "2026-06-20", "category": "meals"}, "rules": {"A_auto": 2000.0, "tau_d": 0.85, "require_receipt_proof": true}, "flags": []}, "gold": "APPROVE"}

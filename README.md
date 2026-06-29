@@ -9,10 +9,55 @@ decision with confidence, rationale, and cited policy clauses.
 
 ## Architecture
 
-A LangGraph state machine routes six specialized agents:
+A LangGraph supervisor routes six specialized agents; the `extract`, `policy_retrieve`, and
+`validate` agents each run a **retry loop** on transient failure, and the binding **policy gate**
+(not the LLM) makes the final call.
+
+```mermaid
+flowchart TD
+    EXP["Expense tool"] -->|"POST /decisions (docs + rules)"| API["API front door (Go)<br/>validate + enqueue"]
+    API --> SQS[["SQS cases queue"]]
+    SQS --> ORCH{{"Orchestrator<br/>LangGraph supervisor"}}
+
+    ORCH --> INTAKE["🅐 Intake agent<br/>classify · redact PII"]
+    INTAKE --> EXTRACT["🅑 Extraction agent · VLM<br/>image → fields"]
+
+    EXTRACT -->|fork| POLICY["🅒 Policy/RAG agent<br/>FAISS + BM25 · cited clauses"]
+    EXTRACT -->|fork| VALIDATE["🅓 Validation/Fraud agent · Go<br/>proof · dup · math"]
+
+    POLICY -->|join| ADJ["🅔 Adjudication agent<br/>LLM proposal (advisory)"]
+    VALIDATE -->|join| ADJ
+    ADJ --> GATE{"Binding policy gate<br/>thresholds + guardrails"}
+
+    GATE -->|"≤ $2k · proof · conf ≥ τ"| APPROVE([APPROVE])
+    GATE -->|"cited hard breach"| DENY([DENY])
+    GATE -->|"over budget · low conf · fraud"| ESCALATE([ESCALATE])
+
+    ESCALATE -.->|durable pause| HUMAN["👤 Human reviewer (HITL)"]
+    HUMAN -.->|resume| WB
+    APPROVE --> WB["🅕 Writeback agent<br/>+ immutable audit"]
+    DENY --> WB
+    WB -->|decision + rationale + citations| EXP
+
+    EXTRACT -. "retry: S3 / gateway / repair" .-> EXTRACT
+    POLICY  -. "retry: embed gateway" .-> POLICY
+
+    subgraph SHARED["Shared services"]
+        GW["LiteLLM gateway"] --- VLLM["vLLM pools<br/>VLM · 70B · embed"]
+        TRACE["Tracing / spans<br/>(trace_id)"]
+        AUDIT[("Immutable audit<br/>S3 Object Lock")]
+    end
+
+    EXTRACT -.-> GW
+    POLICY -.-> GW
+    ADJ -.-> GW
+    WB -.-> AUDIT
+```
+
+Text view of the happy path:
 
 ```
-intake -> extract(VLM) -> { policy_retrieve(RAG) , validate(fraud) } -> adjudicate -> {APPROVE|DENY|ESCALATE}
+intake -> extract(VLM) -> { policy_retrieve(RAG) , validate(fraud) } -> adjudicate -> gate -> {APPROVE|DENY|ESCALATE}
 ```
 
 - **Go** (`services/go`) — API front door, deterministic validation/fraud, expense-tool
